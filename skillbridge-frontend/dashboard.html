@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>SkillBridge Dashboard</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body class="bg-gray-100">
+
+<!-- NAVBAR -->
+<nav class="bg-white px-8 py-4 flex justify-between items-center shadow">
+  <div class="flex items-center gap-2">
+    <div class="bg-blue-600 w-8 h-8 rounded-lg flex items-center justify-center text-white">✨</div>
+    <span class="font-semibold text-lg">SkillBridge</span>
+  </div>
+  <span class="text-sm text-gray-600">Sign Out</span>
+</nav>
+
+<div class="max-w-7xl mx-auto px-6 mt-8">
+
+<h1 class="text-2xl font-bold">Welcome to Your Dashboard</h1>
+<p class="text-gray-500 mb-6">Upload your resume and select a target role to get started.</p>
+
+<!-- ================= UPLOAD + ROLE ================= -->
+<div class="grid grid-cols-2 gap-6">
+
+<!-- Upload Resume -->
+<div class="bg-white p-6 rounded-xl shadow">
+  <h3 class="font-semibold">📄 Upload Resume</h3>
+  <p class="text-sm text-gray-500 mb-4">Upload your PDF resume</p>
+
+  <input type="file" id="resumeFile" accept=".pdf" class="hidden">
+
+  <button onclick="openFile()" class="border px-4 py-2 rounded text-sm bg-white">
+    Select PDF File
+  </button>
+
+  <div id="resumeStatus" class="hidden mt-4 p-3 bg-green-50 border rounded">
+    ✅ Resume processed! Skills extracted.
+  </div>
+</div>
+
+<!-- Job Role -->
+<div class="bg-white p-6 rounded-xl shadow">
+  <h3 class="font-semibold">🎯 Target Job Role</h3>
+  <p class="text-sm text-gray-500 mb-4">Select your role</p>
+
+  <select id="jobRole" class="w-full border p-3 rounded">
+    <option value="">Select job role</option>
+    <option>Frontend Developer</option>
+    <option>Backend Developer</option>
+    <option>Full Stack Developer</option>
+    <option>DevOps Engineer</option>
+  </select>
+
+  <button id="analyzeBtn" onclick="analyze()"
+    class="w-full mt-6 bg-blue-500 text-white py-3 rounded">
+    Analyze Skill Gap →
+  </button>
+</div>
+
+</div>
+
+<!-- Extracted Skills -->
+<div id="skillsBox" class="hidden bg-white mt-6 p-6 rounded-xl shadow">
+  <h3 class="font-semibold mb-2">Extracted Skills</h3>
+  <div id="skills" class="flex flex-wrap gap-2"></div>
+</div>
+
+<!-- ================= RESULT SECTION (HIDDEN INITIALLY) ================= -->
+<div id="resultSection" class="hidden">
+
+<!-- SUMMARY -->
+<div class="grid grid-cols-4 gap-6 mt-8">
+  <div class="bg-white p-4 rounded-xl shadow text-center">
+    <h2 class="text-xl font-bold">6</h2>
+    <p class="text-sm text-gray-500">Skills to Learn</p>
+  </div>
+  <div class="bg-white p-4 rounded-xl shadow text-center">
+    <h2 class="text-xl font-bold">155h</h2>
+    <p class="text-sm text-gray-500">Total Hours</p>
+  </div>
+  <div class="bg-white p-4 rounded-xl shadow text-center">
+    <h2 class="text-xl font-bold">3</h2>
+    <p class="text-sm text-gray-500">Learning Phases</p>
+  </div>
+  <div class="bg-white p-4 rounded-xl shadow text-center">
+    <h2 class="text-xl font-bold">6</h2>
+    <p class="text-sm text-gray-500">Months Est.</p>
+  </div>
+</div>
+
+<!-- TIMELINE -->
+<div class="bg-white p-6 rounded-xl shadow mt-8">
+  <h3 class="font-semibold mb-2">Learning Progress Timeline</h3>
+  <div class="h-56">
+    <canvas id="timelineChart"></canvas>
+  </div>
+</div>
+
+<!-- SKILL DISTRIBUTION -->
+<div class="bg-white p-6 rounded-xl shadow mt-8">
+  <h3 class="font-semibold mb-2">Skill Distribution by Level</h3>
+  <div class="h-48">
+    <canvas id="levelChart"></canvas>
+  </div>
+</div>
+
+<!-- ROADMAP -->
+<div class="bg-white p-6 rounded-xl shadow mt-8">
+  <h3 class="font-semibold mb-1">Your Learning Roadmap</h3>
+  <p class="text-sm text-gray-500 mb-6">Step-by-step guide to bridge your skill gap</p>
+
+  <div id="roadmap" class="space-y-4"></div>
+</div>
+
+</div>
+</div>
+
+<!-- ================= JS ================= -->
+<script>
+let resumeOk=false, roleOk=false;
+
+function openFile(){
+  document.getElementById("resumeFile").click();
+}
+
+document.getElementById("resumeFile").addEventListener("change",()=>{
+  resumeOk=true;
+  document.getElementById("resumeStatus").classList.remove("hidden");
+  document.getElementById("skillsBox").classList.remove("hidden");
+
+  const skills=["JavaScript","React","Node.js","Python","SQL","Git","REST APIs"];
+  const box=document.getElementById("skills");
+  box.innerHTML="";
+  skills.forEach(s=>{
+    box.innerHTML+=`<span class="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm">${s}</span>`;
+  });
+});
+
+document.getElementById("jobRole").addEventListener("change",()=>roleOk=true);
+
+function analyze(){
+  if(!resumeOk||!roleOk){
+    alert("Upload resume and select job role");
+    return;
+  }
+
+  document.getElementById("analyzeBtn").innerText="Analyzing...";
+
+  setTimeout(()=>{
+    document.getElementById("resultSection").classList.remove("hidden");
+    renderCharts();
+    renderRoadmap();
+  },1200);
+}
+
+function renderCharts(){
+  new Chart(document.getElementById("timelineChart"),{
+    type:"line",
+    data:{
+      labels:["Month 1","Month 2","Month 3","Month 4","Month 5","Month 6"],
+      datasets:[{
+        data:[2,4,6,8,10,12],
+        fill:true,
+        borderColor:"#2563eb",
+        backgroundColor:"rgba(37,99,235,0.2)"
+      }]
+    },
+    options:{maintainAspectRatio:false,plugins:{legend:{display:false}}}
+  });
+
+  new Chart(document.getElementById("levelChart"),{
+    type:"bar",
+    data:{
+      labels:["Beginner","Intermediate","Advanced"],
+      datasets:[{
+        data:[2,3,1],
+        backgroundColor:["#22c55e","#f59e0b","#2563eb"]
+      }]
+    },
+    options:{maintainAspectRatio:false,plugins:{legend:{display:false}}}
+  });
+}
+
+function renderRoadmap(){
+  const data=[
+    ["Docker","beginner","20","1","Learn containerization fundamentals"],
+    ["CI/CD Pipelines","beginner","15","2","Automated build & deployment"],
+    ["AWS Fundamentals","intermediate","40","3","Core AWS services"],
+    ["Kubernetes","intermediate","35","4","Container orchestration"],
+    ["GraphQL","intermediate","25","5","Efficient APIs"],
+    ["Redis","advanced","20","6","High performance caching"]
+  ];
+
+  const r=document.getElementById("roadmap");
+  r.innerHTML="";
+
+  data.forEach((d,i)=>{
+    r.innerHTML+=`
+    <div class="flex gap-4 p-5 border rounded-xl bg-gray-50">
+      <div class="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center">${i+1}</div>
+      <div class="flex-1">
+        <div class="flex justify-between">
+          <h4 class="font-semibold">${d[0]}</h4>
+          <span class="text-xs px-3 py-1 bg-blue-600 text-white rounded-full">${d[1]}</span>
+        </div>
+        <p class="text-sm text-gray-600 mt-1">${d[4]}</p>
+        <p class="text-xs text-gray-500 mt-2">⏱ ${d[2]} hours · 🏆 Priority ${d[3]}</p>
+      </div>
+    </div>`;
+  });
+}
+</script>
+
+</body>
+</html>
